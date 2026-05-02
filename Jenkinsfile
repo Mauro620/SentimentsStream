@@ -13,7 +13,7 @@ pipeline {
             }
         }
 
-s       tage('Lint') {
+        stage('Lint') {
             steps {
                 sh '''
                     pip install --quiet ruff black --break-system-packages
