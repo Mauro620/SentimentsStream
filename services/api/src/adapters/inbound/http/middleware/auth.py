@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Callable, Optional
 
-from flask import Request, jsonify, request
+from flask import jsonify, request
 
 
 def require_api_key(api_key: Optional[str]) -> Callable:

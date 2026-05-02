@@ -103,6 +103,73 @@ Conectar Power BI a la API:
 - Fuente Web: `http://localhost:5000/sentiments?limit=1000`
 - Usar `/stats` para distribucion y tendencia temporal.
 
+## Desarrollo Local: Lint, Formato y Tests
+
+El pipeline de Jenkins ejecuta **ruff** (linter) y **black** (formato) antes de correr los tests.
+Ejecuta estos comandos localmente antes de hacer push para evitar fallos en CI.
+
+### Verificar formato y estilo (solo lectura, igual que Jenkins)
+
+```bash
+# via Makefile (recomendado)
+make lint
+
+# o manualmente con docker compose
+docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
+    bash -c "pip install -q ruff black --break-system-packages && \
+             python3 -m ruff check src && \
+             python3 -m black --check src"
+
+docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+    bash -c "pip install -q ruff black --break-system-packages && \
+             python3 -m ruff check src && \
+             python3 -m black --check src"
+```
+
+### Auto-corregir formato y estilo
+
+```bash
+# via Makefile (recomendado)
+make format
+
+# o manualmente con docker compose
+docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
+    bash -c "pip install -q ruff black --break-system-packages && \
+             python3 -m ruff check src --fix && \
+             python3 -m black src"
+
+docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+    bash -c "pip install -q ruff black --break-system-packages && \
+             python3 -m ruff check src --fix && \
+             python3 -m black src"
+```
+
+> **Flujo recomendado:** `make format` primero para auto-corregir, luego `make lint` para confirmar que no quedan errores, luego `git commit`.
+
+### Ejecutar tests unitarios
+
+```bash
+# via Makefile
+make test
+
+# o por servicio
+docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
+    bash -c "pip install -q -r requirements.txt pytest --break-system-packages && \
+             python3 -m pytest tests/unit -v --tb=short"
+
+docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+    bash -c "pip install -q -r requirements.txt pytest --break-system-packages && \
+             python3 -m pytest tests/unit -v --tb=short"
+```
+
+### Resumen de herramientas de calidad
+
+| Herramienta | Que hace | Cuando falla el pipeline |
+|-------------|----------|--------------------------|
+| `ruff` | Linter (equivale a flake8 + isort) | Imports desordenados, variables sin usar, errores de estilo |
+| `black` | Formatter de codigo | Formato inconsistente (espacios, comillas, longitud de linea) |
+| `pytest` | Tests unitarios e integracion | Tests fallidos o sin tests que importar |
+
 ## Tecnologias Utilizadas
 - PySpark
 - MongoDB

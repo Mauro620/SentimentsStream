@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from src.domain.entities import SentimentPrediction
 from src.domain.ports import PredictionRepository
