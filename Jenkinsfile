@@ -78,7 +78,10 @@ pipeline {
 
         stage('Smoke') {
             steps {
-                sh 'bash scripts/run_e2e_smoke.sh'
+                echo "Running Smoke Tests inside the Docker network..."
+                // Usamos un contenedor de cURL efímero para golpear la API internamente
+                sh 'docker run --rm --network sentimentstream_net curlimages/curl -s -f http://sentimentstream-api-1:5000/health'
+                echo "API is Healthy and Responding!"
             }
         }
     }
