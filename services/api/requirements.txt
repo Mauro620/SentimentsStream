@@ -7,3 +7,4 @@ gunicorn
 pyspark
 numpy
 python-dotenv
+pytest
