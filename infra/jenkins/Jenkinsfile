@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        COMPOSE  = 'docker compose -f infra/compose/docker-compose.yml'
+        COMPOSE  = 'docker compose -f infra/compose/docker-compose.yml --project-name sentimentstream'
     }
 
     stages {
