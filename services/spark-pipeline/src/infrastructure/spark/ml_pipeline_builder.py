@@ -1,5 +1,5 @@
 from pyspark.ml import Pipeline
-from pyspark.ml.feature import StringIndexer, IndexToString, Tokenizer, StopWordsRemover, HashingTF, IDF
+from pyspark.ml.feature import StringIndexer, Tokenizer, StopWordsRemover, HashingTF, IDF
 from pyspark.ml.classification import NaiveBayes
 from typing import List
 
@@ -46,11 +46,6 @@ def build_sentiment_pipeline(label_col: str = "sentimiento") -> Pipeline:
         smoothing=1.0
     )
 
-    label_converter = IndexToString(
-        inputCol="prediction",
-        outputCol="predicted_label"
-    )
-
     return Pipeline(stages=[
         label_indexer,
         tokenizer,
@@ -58,5 +53,4 @@ def build_sentiment_pipeline(label_col: str = "sentimiento") -> Pipeline:
         hashing_tf,
         idf,
         nb,
-        label_converter
     ])

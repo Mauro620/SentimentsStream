@@ -1,31 +1,69 @@
-from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, lit, current_timestamp, regexp_replace, lower
-from pyspark.sql.types import FloatType
+from typing import Any, Dict, List, Optional
+
+from pyspark.ml import PipelineModel
 from pyspark.ml.linalg import Vector
-from pyspark.ml.classification import NaiveBayesModel
-from typing import Any
-import uuid
-import os
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.functions import (
+    col,
+    current_timestamp,
+    lit,
+    lower,
+    monotonically_increasing_id,
+    regexp_replace,
+)
+from pyspark.sql.types import FloatType, MapType, StringType
 
 
 def _confidence_udf():
     from pyspark.sql.functions import udf
+
     def extract_max(prob: Vector) -> float:
         return float(max(prob))
     return udf(extract_max, FloatType())
 
 
+def _labels_from_model(model: PipelineModel) -> List[str]:
+    for stage in model.stages:
+        labels = getattr(stage, "labels", None)
+        if isinstance(labels, list) and labels:
+            return [str(label) for label in labels]
+    return ["negativo", "neutral", "positivo"]
+
+
+def _label_udf(labels: List[str]):
+    from pyspark.sql.functions import udf
+
+    def idx_to_label(idx: float) -> str:
+        i = int(idx)
+        return labels[i] if i < len(labels) else "unknown"
+
+    return udf(idx_to_label, StringType())
+
+
+def _probabilities_udf(labels: List[str]):
+    from pyspark.sql.functions import udf
+
+    def to_map(prob: Vector) -> Dict[str, float]:
+        values = [float(x) for x in prob.toArray().tolist()]
+        return {labels[i]: values[i] for i in range(min(len(labels), len(values)))}
+
+    return udf(to_map, MapType(StringType(), FloatType()))
+
+
 def classify_batch(
     spark: SparkSession,
     batch_df: DataFrame,
-    model_path: str = "data/models/v1.0.0",
+    model: Optional[PipelineModel] = None,
+    model_path: str = "/app/data/models/v1.0.0",
     model_version: str = "v1.0.0",
 ) -> DataFrame:
-    # Load persisted model
-    from pyspark.ml import PipelineModel
-    model = PipelineModel.load(model_path)
+    from pyspark.ml.feature import StringIndexerModel
 
-    # batch_df is DataFrame[String] from socket: has "value" col with raw text
+    if model is None:
+        model = PipelineModel.load(model_path)
+
+    labels = _labels_from_model(model)
+
     # Clean text: lowercase, strip punctuation (same as training)
     cleaned = batch_df.withColumn(
         "text_clean",
@@ -34,28 +72,28 @@ def classify_batch(
         )
     )
 
-    # Apply model
-    predictions = model.transform(cleaned)
+    # Skip StringIndexer — no label column available during streaming inference
+    result_df = cleaned
+    for stage in model.stages:
+        if not isinstance(stage, StringIndexerModel):
+            result_df = stage.transform(result_df)
 
-    # Confidence UDF: max of probability vector
+    # Map numeric prediction index → string label
+    label_udf = _label_udf(labels)
     confidence_udf = _confidence_udf()
-    result = predictions.withColumn("confidence", confidence_udf(col("probability")))
+    probabilities_udf = _probabilities_udf(labels)
 
-    # Generate comment_id (UUID) and timestamps
-    from pyspark.sql.functions import udf
-    from pyspark.sql.types import StringType
-    id_udf = udf(lambda: str(uuid.uuid4()), StringType())
+    result_df = result_df \
+        .withColumn("predicted_label", label_udf(col("prediction"))) \
+        .withColumn("confidence", confidence_udf(col("probability")))
 
-    # Build probabilities JSON
-    from pyspark.sql.functions import to_json, struct
-
-    mongo_df = result.select(
-        id_udf().alias("_id"),
+    mongo_df = result_df.select(
+        monotonically_increasing_id().cast("long").alias("comment_id"),
         col("value").alias("text_original"),
         col("text_clean"),
         col("predicted_label").alias("prediction"),
         col("confidence"),
-        to_json(struct("probability")).alias("probabilities"),
+        probabilities_udf(col("probability")).alias("probabilities"),
         current_timestamp().alias("ingested_at"),
         lit(model_version).alias("model_version")
     )

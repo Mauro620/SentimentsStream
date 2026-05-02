@@ -1,4 +1,4 @@
-.PHONY: up down train stream test clean
+.PHONY: up down ingest train stream test clean
 
 up:
 	docker compose -f infra/compose/docker-compose.yml up -d --build
@@ -6,11 +6,17 @@ up:
 down:
 	docker compose -f infra/compose/docker-compose.yml down
 
+ingest:
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+		bash -c "pip install -q -r requirements.txt && python3 -m src.application.ingest_csv_to_bronze"
+
 train:
-	docker compose -f infra/compose/docker-compose.yml run --rm spark-pipeline python -m src.main.train_main
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+		bash -c "pip install -q -r requirements.txt && python3 -m src.main.train_main"
 
 stream:
-	docker compose -f infra/compose/docker-compose.yml run --rm spark-pipeline python -m src.main.stream_main
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
+		bash -c "pip install -q -r requirements.txt && python3 -m src.main.stream_main"
 
 test:
 	docker compose -f infra/compose/docker-compose.yml run --rm spark-pipeline pytest tests/

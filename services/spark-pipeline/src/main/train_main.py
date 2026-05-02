@@ -5,9 +5,9 @@ from pyspark.sql import SparkSession
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train sentiment model")
-    parser.add_argument("--bronze-path", type=str, default="data/bronze/comments_bronze.parquet")
-    parser.add_argument("--model-path", type=str, default="data/models/v1.0.0")
-    parser.add_argument("--metrics-path", type=str, default="data/models/v1.0.0/metrics.json")
+    parser.add_argument("--bronze-path", type=str, default="/app/data/bronze/comments_bronze.parquet")
+    parser.add_argument("--model-path", type=str, default="/app/data/models/v1.0.0")
+    parser.add_argument("--metrics-path", type=str, default="/app/data/models/v1.0.0/metrics.json")
     args = parser.parse_args()
 
     spark = SparkSession.builder \

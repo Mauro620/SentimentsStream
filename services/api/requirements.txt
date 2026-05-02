@@ -1,0 +1,9 @@
+flask
+pymongo
+pydantic
+flask-cors
+flask-caching
+gunicorn
+pyspark
+numpy
+python-dotenv

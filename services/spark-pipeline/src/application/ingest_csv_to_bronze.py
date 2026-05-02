@@ -6,8 +6,8 @@ import pandas as pd
 
 
 def main(
-    raw_path: str = "data/raw/dataset_sentimientos_500.csv",
-    bronze_path: str = "data/bronze/comments_bronze.parquet",
+    raw_path: str = os.getenv("RAW_PATH", "/app/data/raw/dataset_sentimientos_500.csv"),
+    bronze_path: str = os.path.join(os.getenv("BRONZE_PATH", "/app/data/bronze"), "comments_bronze.parquet"),
     seed: int = 42,
 ) -> None:
     df = pd.read_csv(raw_path)

@@ -1,19 +1,20 @@
+import os
 import sys
 from pyspark.sql import SparkSession
 
 
 def main() -> None:
-    model_path: str = "data/models/v1.0.0"
-    checkpoint_dir: str = "data/checkpoints/"
+    model_path: str = os.getenv("MODEL_PATH", "/app/data/models/v1.0.0")
+    checkpoint_dir: str = "/app/data/checkpoints/"
     trigger_interval: str = "5 seconds"
+    mongo_uri: str = os.getenv("MONGO_URI", "mongodb://mongo:27017/sentimentstream?authSource=admin")
 
     spark = SparkSession.builder \
         .appName("SentimentStream-Streaming") \
         .master("local[*]") \
-        .config("spark.mongodb.output.uri", "mongodb://mongo:27017/sentimentstream.predictions") \
         .getOrCreate()
 
-    spark.sparkContext.setCheckpointDir("/tmp/spark-checkpoints")
+    spark.sparkContext.setCheckpointDir(checkpoint_dir)
 
     # Load model once
     from pyspark.ml import PipelineModel
@@ -31,7 +32,7 @@ def main() -> None:
     def process_batch(batch_df, batch_id):
         if batch_df.rdd.isEmpty():
             return
-        result_df = classify_batch(spark, batch_df, model_path=model_path)
+        result_df = classify_batch(spark, batch_df, model=model, model_path=model_path)
         # Write to Mongo via foreachBatch-compatible function
         from src.adapters.outbound.mongo_prediction_writer import write_mongo_batch
         write_mongo_batch(result_df, batch_id)

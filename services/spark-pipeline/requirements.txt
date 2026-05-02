@@ -1,5 +1,6 @@
 pyspark==3.5.1
 pandas>=2.0.0
 pyarrow>=14.0.0
+pymongo
 pytest>=7.0.0
 pytest-mock>=3.0.0

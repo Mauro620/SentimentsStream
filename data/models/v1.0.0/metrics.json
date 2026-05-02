@@ -1,0 +1,8 @@
+{
+  "model_version": "v1.0.0",
+  "f1_score": 1.0,
+  "accuracy": 1.0,
+  "trained_at": "2026-05-02T07:07:25.107404",
+  "train_rows": 428,
+  "test_rows": 74
+}

@@ -4,9 +4,11 @@ services:
     container_name: mongo
     ports:
       - "27017:27017"
+    env_file:
+      - ../../.env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-root}
     volumes:
       - mongo_data:/data/db
       - ../../infra/docker/mongo/init-scripts:/docker-entrypoint-initdb.d
@@ -28,7 +30,7 @@ services:
       RAW_PATH: /app/data/raw/dataset_sentimientos_500.csv
     volumes:
       - ../..:/app
-    working_dir: /app
+    working_dir: /app/services/spark-pipeline
     command: >
       bash -c "pip install -q pandas &&
         python -m src.producers.socket_producer"
@@ -68,20 +70,23 @@ services:
       context: ../..
       dockerfile: infra/docker/spark.Dockerfile
     container_name: spark-pipeline
+    user: root
     depends_on:
       spark-master:
         condition: service_healthy
       socket-producer:
         condition: service_started
+    env_file:
+      - ../../.env
     environment:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - MODEL_PATH=/app/data/models/v1.0.0
     volumes:
       - ../..:/app
-    working_dir: /app
+    working_dir: /app/services/spark-pipeline
     command: >
-      bash -c "pip install -q -r services/spark-pipeline/requirements.txt &&
-        python -m src.main.stream_main"
+      bash -c "pip install -q -r requirements.txt &&
+        python3 -m src.main.stream_main"
     restart: unless-stopped
 
   api:
@@ -91,9 +96,8 @@ services:
     container_name: api
     ports:
       - "5000:5000"
-    environment:
-      MONGO_URI: ${MONGO_URI}
-      API_KEY: ${API_KEY}
+    env_file:
+      - ../../.env
     depends_on:
       mongo:
         condition: service_healthy
@@ -105,6 +109,7 @@ services:
 
 volumes:
   mongo_data:
+    name: sentimentstream_mongo_data
 
 networks:
   default:

@@ -50,19 +50,19 @@ class MongoPredictionWriter(PredictionSink):
 
 
 def write_mongo_batch(batch_df: DataFrame, batch_id: Any) -> None:
-    """ForeachBatch function to write Spark DataFrame to Mongo (§2.4 schema)."""
+    """ForeachBatch function to write Spark DataFrame to Mongo via PyMongo."""
     if batch_df.rdd.isEmpty():
         return
 
-    mongo_uri: str = "mongodb://mongo:27017"
-    database: str = "sentimentstream"
-    collection: str = "predictions"
+    import os
+    from pymongo import MongoClient
 
-    (batch_df.write
-        .format("mongo")
-        .option("uri", mongo_uri)
-        .option("database", database)
-        .option("collection", collection)
-        .option("replaceDocument", "false")
-        .mode("append")
-        .save())
+    mongo_uri: str = os.getenv("MONGO_URI", "mongodb://mongo:27017/sentimentstream?authSource=admin")
+    client = MongoClient(mongo_uri)
+    collection = client["sentimentstream"]["predictions"]
+
+    rows = batch_df.collect()
+    docs = [row.asDict() for row in rows]
+    if docs:
+        collection.insert_many(docs, ordered=False)
+    client.close()
