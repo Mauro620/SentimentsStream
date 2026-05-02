@@ -1,5 +1,11 @@
 from pyspark.ml import Pipeline
-from pyspark.ml.feature import StringIndexer, Tokenizer, StopWordsRemover, HashingTF, IDF
+from pyspark.ml.feature import (
+    StringIndexer,
+    Tokenizer,
+    StopWordsRemover,
+    HashingTF,
+    IDF,
+)
 from pyspark.ml.classification import NaiveBayes
 from typing import List
 
@@ -12,45 +18,29 @@ def build_multilingual_stop_words() -> List[str]:
 
 def build_sentiment_pipeline(label_col: str = "sentimiento") -> Pipeline:
     label_indexer = StringIndexer(
-        inputCol=label_col,
-        outputCol="label_idx",
-        handleInvalid="skip"
+        inputCol=label_col, outputCol="label_idx", handleInvalid="skip"
     )
 
-    tokenizer = Tokenizer(
-        inputCol="text_clean",
-        outputCol="tokens"
-    )
+    tokenizer = Tokenizer(inputCol="text_clean", outputCol="tokens")
 
     stop_words: List[str] = build_multilingual_stop_words()
     stop_words_remover = StopWordsRemover(
-        inputCol="tokens",
-        outputCol="tokens_clean",
-        stopWords=stop_words
+        inputCol="tokens", outputCol="tokens_clean", stopWords=stop_words
     )
 
-    hashing_tf = HashingTF(
-        numFeatures=2 ** 14,
-        inputCol="tokens_clean",
-        outputCol="tf"
-    )
+    hashing_tf = HashingTF(numFeatures=2**14, inputCol="tokens_clean", outputCol="tf")
 
-    idf = IDF(
-        inputCol="tf",
-        outputCol="features"
-    )
+    idf = IDF(inputCol="tf", outputCol="features")
 
-    nb = NaiveBayes(
-        labelCol="label_idx",
-        featuresCol="features",
-        smoothing=1.0
-    )
+    nb = NaiveBayes(labelCol="label_idx", featuresCol="features", smoothing=1.0)
 
-    return Pipeline(stages=[
-        label_indexer,
-        tokenizer,
-        stop_words_remover,
-        hashing_tf,
-        idf,
-        nb,
-    ])
+    return Pipeline(
+        stages=[
+            label_indexer,
+            tokenizer,
+            stop_words_remover,
+            hashing_tf,
+            idf,
+            nb,
+        ]
+    )

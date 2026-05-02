@@ -20,7 +20,9 @@ def train_model(
     # Clean text: lowercase, strip punctuation
     df_clean = df.withColumn(
         "text_clean",
-        regexp_replace(regexp_replace(lower(col("texto")), r"[^\w\s]", ""), r"\s+", " ").alias("text_clean")
+        regexp_replace(
+            regexp_replace(lower(col("texto")), r"[^\w\s]", ""), r"\s+", " "
+        ).alias("text_clean"),
     )
 
     # Stratified 80/20 split on string label — pipeline's StringIndexer handles encoding

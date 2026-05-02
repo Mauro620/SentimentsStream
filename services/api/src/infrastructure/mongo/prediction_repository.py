@@ -37,11 +37,7 @@ class MongoPredictionRepository(PredictionRepository):
         if cursor:
             query["_id"] = {"$lt": ObjectId(cursor)}
 
-        docs = list(
-            self._collection.find(query)
-            .sort("_id", DESCENDING)
-            .limit(limit)
-        )
+        docs = list(self._collection.find(query).sort("_id", DESCENDING).limit(limit))
 
         items = [self._to_entity(doc) for doc in docs]
         next_cursor = str(docs[-1]["_id"]) if docs else None
@@ -90,11 +86,7 @@ class MongoPredictionRepository(PredictionRepository):
     def wordcloud(self, sentiment: str, top_n: int) -> List[Dict[str, object]]:
         pipeline = [
             {"$match": {"prediction": sentiment}},
-            {
-                "$project": {
-                    "tokens": {"$split": ["$text_clean", " "]}
-                }
-            },
+            {"$project": {"tokens": {"$split": ["$text_clean", " "]}}},
             {"$unwind": "$tokens"},
             {
                 "$group": {

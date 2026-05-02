@@ -115,15 +115,14 @@ Ejecuta estos comandos localmente antes de hacer push para evitar fallos en CI.
 make lint
 
 # o manualmente con docker compose
-docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
-    bash -c "pip install -q ruff black --break-system-packages && \
-             python3 -m ruff check src && \
-             python3 -m black --check src"
+# Nota: -v monta el codigo fuente actual; sin esto el container usa la imagen antigua
+docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+    -v "$(pwd)/services/api/src:/app/src" api \
+    bash -c "pip install -q ruff black && python3 -m ruff check src && python3 -m black --check src"
 
-docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
-    bash -c "pip install -q ruff black --break-system-packages && \
-             python3 -m ruff check src && \
-             python3 -m black --check src"
+docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+    -v "$(pwd)/services/spark-pipeline/src:/app/src" spark-pipeline \
+    bash -c "pip install -q ruff black && python3 -m ruff check src && python3 -m black --check src"
 ```
 
 ### Auto-corregir formato y estilo
@@ -133,15 +132,13 @@ docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pi
 make format
 
 # o manualmente con docker compose
-docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
-    bash -c "pip install -q ruff black --break-system-packages && \
-             python3 -m ruff check src --fix && \
-             python3 -m black src"
+docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+    -v "$(pwd)/services/api/src:/app/src" api \
+    bash -c "pip install -q ruff black && python3 -m ruff check src --fix && python3 -m black src"
 
-docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
-    bash -c "pip install -q ruff black --break-system-packages && \
-             python3 -m ruff check src --fix && \
-             python3 -m black src"
+docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+    -v "$(pwd)/services/spark-pipeline/src:/app/src" spark-pipeline \
+    bash -c "pip install -q ruff black && python3 -m ruff check src --fix && python3 -m black src"
 ```
 
 > **Flujo recomendado:** `make format` primero para auto-corregir, luego `make lint` para confirmar que no quedan errores, luego `git commit`.
@@ -154,11 +151,11 @@ make test
 
 # o por servicio
 docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
-    bash -c "pip install -q -r requirements.txt pytest --break-system-packages && \
+    bash -c "pip install -q -r requirements.txt pytest  && \
              python3 -m pytest tests/unit -v --tb=short"
 
 docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
-    bash -c "pip install -q -r requirements.txt pytest --break-system-packages && \
+    bash -c "pip install -q -r requirements.txt pytest  && \
              python3 -m pytest tests/unit -v --tb=short"
 ```
 

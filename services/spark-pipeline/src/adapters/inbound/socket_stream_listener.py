@@ -7,8 +7,7 @@ def create_socket_stream(
     port: int = 9999,
 ) -> DataFrame:
     return (
-        spark.readStream
-        .format("socket")
+        spark.readStream.format("socket")
         .option("host", host)
         .option("port", port)
         .load()

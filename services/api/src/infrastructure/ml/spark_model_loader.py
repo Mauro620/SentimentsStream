@@ -32,9 +32,12 @@ class SparkModelLoader:
         row = result_df.select("prediction", "probability").collect()[0]
         prob = row["probability"]
         pred_idx = int(row["prediction"])
-        label = self._labels[pred_idx] if pred_idx < len(self._labels) else str(pred_idx)
+        label = (
+            self._labels[pred_idx] if pred_idx < len(self._labels) else str(pred_idx)
+        )
         probabilities = {
-            self._labels[i]: float(prob[i]) for i in range(min(len(self._labels), len(prob)))
+            self._labels[i]: float(prob[i])
+            for i in range(min(len(self._labels), len(prob)))
         }
         return {
             "prediction": label,

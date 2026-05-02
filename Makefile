@@ -19,16 +19,20 @@ stream:
 		bash -c "pip install -q -r requirements.txt && python3 -m src.main.stream_main"
 
 lint:
-	docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
-		bash -c "pip install -q ruff black --break-system-packages && python3 -m ruff check src && python3 -m black --check src"
-	docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
-		bash -c "pip install -q ruff black --break-system-packages && python3 -m ruff check src && python3 -m black --check src"
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+		-v "$(CURDIR)/services/api/src:/app/src" api \
+		bash -c "export PATH=/usr/local/bin:$$PATH && pip install -q ruff black && ruff check src && black --check src"
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+		-v "$(CURDIR)/services/spark-pipeline/src:/app/src" spark-pipeline \
+		bash -c "export PATH=/usr/local/bin:$$PATH && pip install -q ruff black && ruff check src && black --check src"
 
 format:
-	docker compose -f infra/compose/docker-compose.yml run --rm --user root api \
-		bash -c "pip install -q ruff black --break-system-packages && python3 -m ruff check src --fix && python3 -m black src"
-	docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pipeline \
-		bash -c "pip install -q ruff black --break-system-packages && python3 -m ruff check src --fix && python3 -m black src"
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+		-v "$(CURDIR)/services/api/src:/app/src" api \
+		bash -c "export PATH=/usr/local/bin:$$PATH && pip install -q ruff black && ruff check src --fix && black src"
+	docker compose -f infra/compose/docker-compose.yml run --rm --user root \
+		-v "$(CURDIR)/services/spark-pipeline/src:/app/src" spark-pipeline \
+		bash -c "export PATH=/usr/local/bin:$$PATH && pip install -q ruff black && ruff check src --fix && black src"
 
 test:
 	docker compose -f infra/compose/docker-compose.yml run --rm spark-pipeline pytest tests/

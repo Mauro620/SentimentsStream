@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from pyspark.ml import PipelineModel
 from pyspark.ml.linalg import Vector
@@ -19,6 +19,7 @@ def _confidence_udf():
 
     def extract_max(prob: Vector) -> float:
         return float(max(prob))
+
     return udf(extract_max, FloatType())
 
 
@@ -69,7 +70,7 @@ def classify_batch(
         "text_clean",
         regexp_replace(
             regexp_replace(lower(col("value")), r"[^\w\s]", ""), r"\s+", " "
-        )
+        ),
     )
 
     # Skip StringIndexer — no label column available during streaming inference
@@ -83,9 +84,9 @@ def classify_batch(
     confidence_udf = _confidence_udf()
     probabilities_udf = _probabilities_udf(labels)
 
-    result_df = result_df \
-        .withColumn("predicted_label", label_udf(col("prediction"))) \
-        .withColumn("confidence", confidence_udf(col("probability")))
+    result_df = result_df.withColumn(
+        "predicted_label", label_udf(col("prediction"))
+    ).withColumn("confidence", confidence_udf(col("probability")))
 
     mongo_df = result_df.select(
         monotonically_increasing_id().cast("long").alias("comment_id"),
@@ -95,7 +96,7 @@ def classify_batch(
         col("confidence"),
         probabilities_udf(col("probability")).alias("probabilities"),
         current_timestamp().alias("ingested_at"),
-        lit(model_version).alias("model_version")
+        lit(model_version).alias("model_version"),
     )
 
     return mongo_df

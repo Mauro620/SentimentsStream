@@ -4,10 +4,18 @@ from typing import Optional
 
 from flask import Flask
 
-from src.adapters.inbound.http.controllers.health_controller import create_health_controller
-from src.adapters.inbound.http.controllers.predict_controller import create_predict_controller
-from src.adapters.inbound.http.controllers.sentiments_controller import create_sentiments_controller
-from src.adapters.inbound.http.controllers.stats_controller import create_stats_controller
+from src.adapters.inbound.http.controllers.health_controller import (
+    create_health_controller,
+)
+from src.adapters.inbound.http.controllers.predict_controller import (
+    create_predict_controller,
+)
+from src.adapters.inbound.http.controllers.sentiments_controller import (
+    create_sentiments_controller,
+)
+from src.adapters.inbound.http.controllers.stats_controller import (
+    create_stats_controller,
+)
 from src.domain.ports import PredictionRepository, SentimentClassifier
 
 
