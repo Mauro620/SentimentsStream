@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.ml.feature import StringIndexer
 from pyspark.sql.functions import lower, regexp_replace, col
 import json
 import os
@@ -23,13 +24,17 @@ def train_model(
         regexp_replace(regexp_replace(lower(col("texto")), r"[^\w\s]", ""), r"\s+", " ").alias("text_clean")
     )
 
-    # Stratified 80/20 split
-    label_counts = df_clean.groupBy("sentimiento").count().collect()
-    fractions = {row["sentimiento"]: 0.8 for row in label_counts}
-    train_df = df_clean.sampleBy("sentimiento", fractions, seed=42)
-    test_df = df_clean.subtract(train_df)
+    # Fit StringIndexer to create label_idx for stratified split
+    indexer = StringIndexer(inputCol="sentimiento", outputCol="label_idx", handleInvalid="skip")
+    df_indexed = indexer.fit(df_clean).transform(df_clean)
 
-    # Build and fit pipeline
+    # Stratified 80/20 split using label_idx (per plan.md)
+    label_counts = df_indexed.groupBy("label_idx").count().collect()
+    fractions = {row["label_idx"]: 0.8 for row in label_counts}
+    train_df = df_indexed.sampleBy("label_idx", fractions, seed=42)
+    test_df = df_indexed.subtract(train_df)
+
+    # Build and fit full pipeline (includes its own StringIndexer)
     pipeline = build_sentiment_pipeline()
     model = pipeline.fit(train_df)
 
