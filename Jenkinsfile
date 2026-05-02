@@ -13,12 +13,12 @@ pipeline {
             }
         }
 
-        stage('Lint') {
+s       tage('Lint') {
             steps {
                 sh '''
                     pip install --quiet ruff black --break-system-packages
-                    ruff check services/api/src services/spark-pipeline/src
-                    black --check services/api/src services/spark-pipeline/src
+                    python3 -m ruff check services/api/src services/spark-pipeline/src
+                    python3 -m black --check services/api/src services/spark-pipeline/src
                 '''
             }
         }
