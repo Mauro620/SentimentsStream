@@ -53,6 +53,7 @@ pipeline {
 
         stage('Integration Tests') {
             steps {
+                sh "${COMPOSE} down -v || true"
                 sh "${COMPOSE} up -d mongo"
                 sh 'sleep 15'
                 sh '''
@@ -69,6 +70,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
+                sh "${COMPOSE} down -v || true"
                 sh "${COMPOSE} up -d --build"
                 sh 'sleep 20'
             }
