@@ -98,6 +98,8 @@ services:
       - "5000:5000"
     env_file:
       - ../../.env
+    volumes:
+      - ../../data/models:/app/data/models:ro
     depends_on:
       mongo:
         condition: service_healthy

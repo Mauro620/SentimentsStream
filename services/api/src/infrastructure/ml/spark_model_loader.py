@@ -18,19 +18,26 @@ class SparkModelLoader:
         self._labels = self._labels_from_model(self._model)
 
     def predict(self, text: str) -> Dict[str, object]:
+        from pyspark.ml.feature import StringIndexerModel
+
         df = self._spark.createDataFrame([(text,)], ["text"])
-        cleaned = df.selectExpr(
+        result_df = df.selectExpr(
             "lower(regexp_replace(text, '[^\\\\w\\\\s]', '')) as text_clean"
         )
-        predictions = self._model.transform(cleaned)
-        label_col = "predicted_label" if "predicted_label" in predictions.columns else "prediction"
-        row = predictions.select(label_col, "probability").collect()[0]
+
+        for stage in self._model.stages:
+            if not isinstance(stage, StringIndexerModel):
+                result_df = stage.transform(result_df)
+
+        row = result_df.select("prediction", "probability").collect()[0]
         prob = row["probability"]
+        pred_idx = int(row["prediction"])
+        label = self._labels[pred_idx] if pred_idx < len(self._labels) else str(pred_idx)
         probabilities = {
             self._labels[i]: float(prob[i]) for i in range(min(len(self._labels), len(prob)))
         }
         return {
-            "prediction": str(row[label_col]),
+            "prediction": label,
             "confidence": float(max(prob)),
             "probabilities": probabilities,
         }

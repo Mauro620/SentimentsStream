@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentimentStream</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    body { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    .badge { display:inline-block; padding:.25rem .75rem; border-radius:1rem; font-weight:bold; color:#fff; }
+    .positivo { background:#2e7d32; }
+    .negativo { background:#c62828; }
+    .neutral  { background:#f57f17; color:#222; }
+    #result-card { display:none; }
+  </style>
+</head>
+<body>
+  <h1>SentimentStream <small>��� Real-time Sentiment Classifier</small></h1>
+
+  <section>
+    <label for="input-text">Comment</label>
+    <textarea id="input-text" rows="3" placeholder="Type a comment in English or Spanish…"></textarea>
+    <button id="predict-btn">Analyze</button>
+  </section>
+
+  <article id="result-card">
+    <h3>Result</h3>
+    <p>Sentiment: <span id="pred-label" class="badge">—</span></p>
+    <p>Confidence: <strong id="pred-conf">��</strong></p>
+    <details>
+      <summary>Probabilities</summary>
+      <pre id="pred-probs"></pre>
+    </details>
+  </article>
+
+  <h2>Latest Predictions</h2>
+  <figure>
+    <table id="predictions-table">
+      <thead><tr><th>Text</th><th>Sentiment</th><th>Confidence</th><th>Time</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </figure>
+
+  <script src="app.js"></script>
+</body>
+</html>

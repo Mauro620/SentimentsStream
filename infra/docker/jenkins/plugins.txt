@@ -1,0 +1,6 @@
+workflow-aggregator:latest
+docker-workflow:latest
+git:latest
+pipeline-stage-view:latest
+blueocean:latest
+job-dsl:latest

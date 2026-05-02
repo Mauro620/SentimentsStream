@@ -1,12 +1,21 @@
 from __future__ import annotations
 
-from datetime import date
+from dataclasses import asdict
+from datetime import date, datetime
 from typing import Optional
 
 from flask import Blueprint, jsonify, request
 
 from src.application.list_sentiments import list_sentiments
+from src.domain.entities import SentimentPrediction
 from src.domain.ports import PredictionRepository
+
+
+def _serialize(item: SentimentPrediction) -> dict:
+    d = asdict(item)
+    if isinstance(d.get("ingested_at"), datetime):
+        d["ingested_at"] = d["ingested_at"].isoformat()
+    return d
 
 
 def create_sentiments_controller(repo: PredictionRepository) -> Blueprint:
@@ -33,7 +42,7 @@ def create_sentiments_controller(repo: PredictionRepository) -> Blueprint:
         )
 
         payload = {
-            "items": [item.__dict__ for item in result.items],
+            "items": [_serialize(item) for item in result.items],
             "next_cursor": result.next_cursor,
         }
         return jsonify(payload), 200
