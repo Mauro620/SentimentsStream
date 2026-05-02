@@ -1,44 +1,57 @@
-import os
+import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 
-BRONZE_PATH = "data/bronze/comments_bronze.parquet"
-RAW_CSV = "data/raw/dataset_sentimientos_500.csv"
+from src.application.ingest_csv_to_bronze import main
+
+N_ROWS = 10
 
 
-def test_bronze_parquet_exists_after_ingest():
-    from src.application.ingest_csv_to_bronze import main
-    main()
-    assert os.path.exists(BRONZE_PATH), "Bronze parquet not created"
+@pytest.fixture
+def sample_csv(tmp_path):
+    csv_file = tmp_path / "dataset.csv"
+    df = pd.DataFrame(
+        {
+            "texto": [f"comment {i}" for i in range(N_ROWS)],
+            "etiqueta": ["positivo", "negativo", "neutral"] * 3 + ["positivo"],
+        }
+    )
+    df.to_csv(csv_file, index=False)
+    return csv_file
 
 
-def test_bronze_has_500_rows():
-    from src.application.ingest_csv_to_bronze import main
-    main()
-    table = pq.read_table(BRONZE_PATH)
-    assert table.num_rows == 500, f"Expected 500 rows, got {table.num_rows}"
+@pytest.fixture
+def bronze_dir(tmp_path):
+    return tmp_path / "bronze"
 
 
-def test_bronze_has_required_columns():
-    from src.application.ingest_csv_to_bronze import main
-    main()
-    table = pq.read_table(BRONZE_PATH)
-    expected = {"id", "texto", "sentimiento", "fecha"}
-    assert expected.issubset(set(table.column_names)), \
-        f"Missing columns: {expected - set(table.column_names)}"
+def run(sample_csv, bronze_dir):
+    main(raw_path=str(sample_csv), bronze_path=str(bronze_dir / "out.parquet"))
+    return pq.read_table(str(bronze_dir / "out.parquet"))
 
 
-def test_bronze_id_is_monotonic():
-    from src.application.ingest_csv_to_bronze import main
-    main()
-    table = pq.read_table(BRONZE_PATH)
+def test_bronze_parquet_created(sample_csv, bronze_dir):
+    table = run(sample_csv, bronze_dir)
+    assert table is not None
+
+
+def test_bronze_row_count(sample_csv, bronze_dir):
+    table = run(sample_csv, bronze_dir)
+    assert table.num_rows == N_ROWS
+
+
+def test_bronze_required_columns(sample_csv, bronze_dir):
+    table = run(sample_csv, bronze_dir)
+    assert {"id", "texto", "sentimiento", "fecha"}.issubset(set(table.column_names))
+
+
+def test_bronze_id_is_monotonic(sample_csv, bronze_dir):
+    table = run(sample_csv, bronze_dir)
     ids = table.column("id").to_pylist()
-    assert ids == list(range(500)), "IDs not monotonic 0-499"
+    assert ids == list(range(N_ROWS))
 
 
-def test_bronze_sentimiento_renamed_from_etiqueta():
-    from src.application.ingest_csv_to_bronze import main
-    main()
-    table = pq.read_table(BRONZE_PATH)
+def test_bronze_etiqueta_renamed_to_sentimiento(sample_csv, bronze_dir):
+    table = run(sample_csv, bronze_dir)
     assert "sentimiento" in table.column_names
     assert "etiqueta" not in table.column_names
