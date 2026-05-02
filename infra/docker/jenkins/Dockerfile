@@ -15,4 +15,6 @@ RUN curl -fsSL "https://github.com/docker/compose/releases/download/v2.27.0/dock
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
+RUN groupadd -f docker && usermod -aG docker jenkins
+
 USER jenkins
