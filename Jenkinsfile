@@ -16,7 +16,7 @@ pipeline {
         stage('Lint') {
             steps {
                 sh '''
-                    pip install --quiet ruff black
+                    pip install --quiet ruff black --break-system-packages
                     ruff check services/api/src services/spark-pipeline/src
                     black --check services/api/src services/spark-pipeline/src
                 '''
@@ -28,7 +28,7 @@ pipeline {
                 stage('API') {
                     steps {
                         sh '''
-                            pip install --quiet -r services/api/requirements.txt
+                            pip install --quiet -r services/api/requirements.txt --break-system-packages
                             cd services/api && python3 -m pytest tests/unit -v --tb=short
                         '''
                     }
@@ -36,7 +36,7 @@ pipeline {
                 stage('Spark Pipeline') {
                     steps {
                         sh '''
-                            pip install --quiet -r services/spark-pipeline/requirements.txt
+                            pip install --quiet -r services/spark-pipeline/requirements.txt --break-system-packages
                             cd services/spark-pipeline && python3 -m pytest tests/unit -v --tb=short
                         '''
                     }
@@ -56,6 +56,7 @@ pipeline {
                 sh "${COMPOSE} up -d mongo"
                 sh 'sleep 15'
                 sh '''
+                    pip install --quiet pytest --break-system-packages
                     cd services/api && python3 -m pytest tests/integration -v --tb=short
                 '''
             }
