@@ -54,6 +54,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 sh "${COMPOSE} down -v || true"
+                sh 'docker rm -f $(docker ps -q --filter "publish=27017") 2>/dev/null || true'
                 sh "${COMPOSE} up -d mongo"
                 sh 'sleep 15'
                 sh '''
@@ -71,6 +72,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh "${COMPOSE} down -v || true"
+                sh 'docker rm -f $(docker ps -q --filter "publish=27017") 2>/dev/null || true'
                 sh "${COMPOSE} up -d --build"
                 sh 'sleep 20'
             }
