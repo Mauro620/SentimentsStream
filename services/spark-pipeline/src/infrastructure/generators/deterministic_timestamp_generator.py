@@ -24,6 +24,5 @@ class DeterministicTimestampGenerator(TimestampGenerator):
         base = now - timedelta(days=self._days_back)
         total_seconds = self._days_back * 24 * 3600
         return [
-            base + timedelta(seconds=rng.randint(0, total_seconds))
-            for _ in range(n)
+            base + timedelta(seconds=rng.randint(0, total_seconds)) for _ in range(n)
         ]

@@ -9,7 +9,9 @@ from pyspark.sql.functions import col, lit, lower, regexp_replace, to_timestamp
 def main() -> None:
     bronze_path = os.getenv("BRONZE_PATH", "/app/data/bronze/comments_bronze.parquet")
     model_path = os.getenv("MODEL_PATH", "/app/data/models/v1.0.0")
-    mongo_uri = os.getenv("MONGO_URI", "mongodb://admin:root@mongo:27017/sentimentstream?authSource=admin")
+    mongo_uri = os.getenv(
+        "MONGO_URI", "mongodb://admin:root@mongo:27017/sentimentstream?authSource=admin"
+    )
 
     spark = (
         SparkSession.builder.appName("SentimentStream-Backfill")
@@ -28,7 +30,7 @@ def main() -> None:
         for stage in model.stages:
             lbls = getattr(stage, "labels", None)
             if isinstance(lbls, list) and lbls:
-                labels = [str(l) for l in lbls]
+                labels = [str(label) for label in lbls]
                 break
         if not labels:
             labels = ["negativo", "neutral", "positivo"]
@@ -54,7 +56,6 @@ def main() -> None:
                 result_df = stage.transform(result_df)
 
         # UDFs for mapping
-        from pyspark.ml.linalg import Vector
         from pyspark.sql.functions import udf
         from pyspark.sql.types import FloatType, MapType, StringType
 
@@ -82,6 +83,7 @@ def main() -> None:
             ts_col = to_timestamp(col("ingested_at"))
         else:
             from pyspark.sql.functions import current_timestamp
+
             ts_col = current_timestamp()
 
         mongo_df = result_df.select(
@@ -100,6 +102,7 @@ def main() -> None:
         print(f"Backfilling {len(rows)} rows into MongoDB...")
 
         from pymongo import MongoClient
+
         client = MongoClient(mongo_uri)
         collection = client["sentimentstream"]["predictions"]
         collection.delete_many({})  # clear any stale data
