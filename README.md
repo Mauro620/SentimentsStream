@@ -159,6 +159,11 @@ docker compose -f infra/compose/docker-compose.yml run --rm --user root spark-pi
              python3 -m pytest tests/unit -v --tb=short"
 ```
 
+### Jenkins ini
+```bash
+docker run -d -p 9090:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock --group-add $(stat -c '%g' /var/run/docker.sock) --name jenkins sentimentstream-jenkins
+```
+
 ### Resumen de herramientas de calidad
 
 | Herramienta | Que hace | Cuando falla el pipeline |

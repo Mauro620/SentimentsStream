@@ -1,8 +1,35 @@
 import os
-from datetime import datetime, timedelta
-from random import Random
+from typing import Optional
 
 import pandas as pd
+
+from src.domain.ports.timestamp_generator import TimestampGenerator
+
+
+class IngestCsvToBronzeUseCase:
+    """Application layer: orchestrate CSV ingestion with deterministic timestamps."""
+
+    def __init__(self, timestamp_generator: TimestampGenerator) -> None:
+        self._timestamp_generator = timestamp_generator
+
+    def execute(
+        self,
+        raw_path: str,
+        bronze_path: str,
+    ) -> None:
+        df = pd.read_csv(raw_path)
+        n = len(df)
+
+        # deterministic temporal dispersion
+        timestamps = self._timestamp_generator.generate_batch(n)
+
+        df["id"] = range(n)
+        df["ingested_at"] = [ts.isoformat() for ts in timestamps]
+        df = df.rename(columns={"etiqueta": "sentimiento"})
+
+        out = df[["id", "texto", "sentimiento", "ingested_at"]]
+        os.makedirs(os.path.dirname(bronze_path), exist_ok=True)
+        out.to_parquet(bronze_path, index=False)
 
 
 def main(
@@ -12,28 +39,11 @@ def main(
     ),
     seed: int = 42,
 ) -> None:
-    df = pd.read_csv(raw_path)
+    from src.infrastructure.generators.deterministic_timestamp_generator import (
+        DeterministicTimestampGenerator,
+    )
 
-    # Synthesize id (monotonic 0-499)
-    df["id"] = range(len(df))
-
-    # Synthesize fecha (random dates over last 90 days, deterministic)
-    rng = Random(seed)
-    base = datetime.now() - timedelta(days=90)
-    df["fecha"] = [
-        (base + timedelta(days=rng.uniform(0, 90))).strftime("%Y-%m-%d")
-        for _ in range(len(df))
-    ]
-
-    # Rename etiqueta -> sentimiento
-    df = df.rename(columns={"etiqueta": "sentimiento"})
-
-    # Select + write
-    out = df[["id", "texto", "sentimiento", "fecha"]]
-    os.makedirs(os.path.dirname(bronze_path), exist_ok=True)
-    out.to_parquet(bronze_path, index=False)
-    print(f"Wrote {len(out)} rows to {bronze_path}")
-
-
-if __name__ == "__main__":
-    main()
+    generator: TimestampGenerator = DeterministicTimestampGenerator(seed=seed)
+    use_case = IngestCsvToBronzeUseCase(timestamp_generator=generator)
+    use_case.execute(raw_path=raw_path, bronze_path=bronze_path)
+    print(f"Wrote bronze to {bronze_path}")

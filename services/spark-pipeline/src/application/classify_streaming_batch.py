@@ -4,12 +4,14 @@ from pyspark.ml import PipelineModel
 from pyspark.ml.linalg import Vector
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
+    coalesce,
     col,
     current_timestamp,
     lit,
     lower,
     monotonically_increasing_id,
     regexp_replace,
+    to_timestamp,
 )
 from pyspark.sql.types import FloatType, MapType, StringType
 
@@ -88,6 +90,12 @@ def classify_batch(
         "predicted_label", label_udf(col("prediction"))
     ).withColumn("confidence", confidence_udf(col("probability")))
 
+    # Preserve bronze ingested_at when available; fallback to current_timestamp
+    if "ingested_at" in batch_df.columns:
+        ts_col = coalesce(to_timestamp(col("ingested_at")), current_timestamp())
+    else:
+        ts_col = current_timestamp()
+
     mongo_df = result_df.select(
         monotonically_increasing_id().cast("long").alias("comment_id"),
         col("value").alias("text_original"),
@@ -95,7 +103,7 @@ def classify_batch(
         col("predicted_label").alias("prediction"),
         col("confidence"),
         probabilities_udf(col("probability")).alias("probabilities"),
-        current_timestamp().alias("ingested_at"),
+        ts_col.alias("ingested_at"),
         lit(model_version).alias("model_version"),
     )
 

@@ -1,23 +1,32 @@
+from datetime import datetime
+
 import pytest
 from src.domain.entities.comment import Comment
 from src.domain.entities.sentiment_prediction import SentimentPrediction
 
 
 def test_comment_creation():
-    c = Comment(id=1, texto="Great!", sentimiento="positivo", fecha="2026-05-01")
+    ts = datetime(2026, 5, 1, 12, 0, 0)
+    c = Comment(id=1, texto="Great!", sentimiento="positivo", ingested_at=ts)
     assert c.id == 1
     assert c.texto == "Great!"
     assert c.sentimiento == "positivo"
+    assert c.ingested_at == ts
+    assert c.fecha == "2026-05-01"
     assert c.text_clean is None
 
 
 def test_comment_with_text_clean():
-    c = Comment(id=2, texto="Bad!", sentimiento="negativo", fecha="2026-05-01", text_clean="bad")
+    ts = datetime(2026, 5, 1, 12, 0, 0)
+    c = Comment(
+        id=2, texto="Bad!", sentimiento="negativo", ingested_at=ts, text_clean="bad"
+    )
     assert c.text_clean == "bad"
 
 
 def test_comment_frozen():
-    c = Comment(id=1, texto="Great!", sentimiento="positivo", fecha="2026-05-01")
+    ts = datetime(2026, 5, 1, 12, 0, 0)
+    c = Comment(id=1, texto="Great!", sentimiento="positivo", ingested_at=ts)
     with pytest.raises(AttributeError):
         c.texto = "changed"
 
